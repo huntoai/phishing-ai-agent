@@ -1,0 +1,22 @@
+# AI Framework
+pydantic-ai
+pydantic-ai[google]
+
+# HTTP Requests
+requests
+
+# Database
+sqlalchemy>=2.0.0
+
+# CLI
+tabulate
+
+# Additional utilities
+python-dotenv
+beautifulsoup4
+lxml
+
+# Enrichment Sources
+linkedin-api>=2.0.0  # LinkedIn scraping (authenticated profile data)
+# Note: Brave Search uses direct API calls (no official Python library needed)
+
