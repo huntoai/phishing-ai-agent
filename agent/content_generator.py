@@ -11,8 +11,13 @@ class ContentGenerator:
     """AI agent for generating dynamic, varied phishing email content."""
     
     def __init__(self):
+        # Always set OPENAI_API_KEY in os.environ for all libraries
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            os.environ['OPENAI_API_KEY'] = openai_key
+
         model_name = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
-        
+
         self.agent = Agent(
             model=OpenAIChatModel(model_name),
             system_prompt="""You are an expert phishing email writer specializing in social engineering campaigns.

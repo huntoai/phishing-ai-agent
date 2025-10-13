@@ -20,12 +20,17 @@ class EnrichmentAgent:
     """AI agent for enriching employee profiles with dynamic knowledge fetching."""
     
     def __init__(self):
+        # Always set OPENAI_API_KEY in os.environ for all libraries
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if openai_key:
+            os.environ['OPENAI_API_KEY'] = openai_key
+
         model_name = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
-        
+
         self.trends_fetcher = PhishingTrendsFetcher()
         self.regional_fetcher = RegionalIntelligenceFetcher()
         self.industry_fetcher = IndustryIntelligenceFetcher()
-        
+
         self.agent = Agent(
             model=OpenAIChatModel(model_name),
             system_prompt="""You are an expert social engineering analyst specializing in phishing attack planning.

@@ -10,17 +10,28 @@ from core.models import Organization, Employee, AttackSimulation
 load_dotenv()
 
 
+def get_domain_employees(db, domain):
+    """Get all employees for a specific domain."""
+    employees = db.session.query(Employee).all()
+    return [e for e in employees if domain in e.email]
+
+
+def print_org_info(org):
+    """Print organization information."""
+    print(f"\nOrganization: {org.name}")
+    print(f"   Domain: {org.domain}")
+    print(f"   Industry: {org.industry}")
+    print(f"   Employees: {org.employee_count}")
+    print(f"   Location: {org.city}, {org.state}, {org.country}\n")
+
+
 def cmd_enrich_org(args):
     """Enrich organization data."""
     workflow = PhishingWorkflow()
     org = workflow.enrich_organization(args.domain, force_refresh=args.refresh)
     
     if org:
-        print(f"\nOrganization Enriched: {org.name}")
-        print(f"   Domain: {org.domain}")
-        print(f"   Industry: {org.industry}")
-        print(f"   Employees: {org.employee_count}")
-        print(f"   Location: {org.city}, {org.state}, {org.country}\n")
+        print_org_info(org)
     else:
         print(f"Failed to enrich organization: {args.domain}")
 
@@ -32,9 +43,7 @@ def cmd_gather_employees(args):
     
     if employees:
         print(f"\nGathered {len(employees)} employees\n")
-        data = []
-        for emp in employees:
-            data.append([emp.email, f"{emp.first_name} {emp.last_name}", emp.title, emp.city])
+        data = [[emp.email, f"{emp.first_name} {emp.last_name}", emp.title, emp.city] for emp in employees]
         print(tabulate(data, headers=["Email", "Name", "Title", "Location"], tablefmt="grid"))
     else:
         print(f"No employees found for {args.domain}")
@@ -44,39 +53,25 @@ def cmd_enrich_employees(args):
     """Enrich employees with vulnerability assessment."""
     workflow = PhishingWorkflow()
     db = DatabaseAdapter()
-    
-    # Get organization
     org = db.get_organization_by_domain(args.domain)
     
     if args.email:
-        # Enrich single employee
         emp = db.get_employee_by_email(args.email)
         if not emp:
-            print(f"\nEmployee not found: {args.email}")
-            print("Run 'gather' command first to collect employees.\n")
+            print(f"\nEmployee not found: {args.email}\nRun 'gather' command first.\n")
             return
         
-        enrichment = workflow.enrich_employee(emp, org)
-        
-        # Refresh the employee object to get the updated data
+        workflow.enrich_employee(emp, org)
         db.session.refresh(emp)
         
         print(f"\nEnriched: {emp.email}")
         print(f"   Vulnerability: {emp.vulnerability_score}/100")
-        print(f"   Risk Level: {emp.risk_level.upper()}")
-        
-        # Get enrichment data
-        enrichment_data = emp.enrichment_data.get('vulnerability_analysis', {}) if emp.enrichment_data else {}
-        risk_factors = enrichment_data.get('risk_factors', [])
-        print(f"   Factors: {', '.join(risk_factors[:3])}\n")
+        print(f"   Risk Level: {emp.risk_level.upper()}\n")
     else:
-        # Enrich all employees for domain
-        employees = db.session.query(Employee).all()
-        domain_employees = [e for e in employees if args.domain in e.email]
-        
+        domain_employees = get_domain_employees(db, args.domain)
         print(f"\nEnriching {len(domain_employees)} employees...\n")
         for emp in domain_employees:
-            enrichment = workflow.enrich_employee(emp, org)
+            workflow.enrich_employee(emp, org)
             print(f"{emp.email} - {emp.vulnerability_score}/100 ({emp.risk_level})")
 
 
@@ -84,22 +79,15 @@ def cmd_generate_content(args):
     """Generate phishing content for employees."""
     workflow = PhishingWorkflow()
     db = DatabaseAdapter()
-    
-    # Get organization
     org = db.get_organization_by_domain(args.domain)
     
     if args.email:
-        # Generate for single employee
         content = workflow.generate_content(args.email, org)
-        print(f"\nGenerated content for: {args.email}")
-        print(f"\nSubject: {content.get('subject')}")
-        print(f"From: {content.get('sender')}")
-        print(f"\nBody:\n{content.get('body')[:300]}...\n")
+        print(f"\nGenerated for: {args.email}")
+        print(f"Subject: {content.get('subject')}")
+        print(f"From: {content.get('sender')}\n")
     else:
-        # Generate for all employees
-        employees = db.session.query(Employee).all()
-        domain_employees = [e for e in employees if args.domain in e.email]
-        
+        domain_employees = get_domain_employees(db, args.domain)
         print(f"\nGenerating content for {len(domain_employees)} employees...\n")
         for emp in domain_employees:
             content = workflow.generate_content(emp.email, org)
@@ -107,15 +95,28 @@ def cmd_generate_content(args):
 
 
 def cmd_send_email(args):
-    """Send phishing email simulation."""
+    """Send phishing email via SMTP."""
     workflow = PhishingWorkflow()
     
-    result = workflow.send_email(args.email, attack_id=args.attack_id)
-    
-    if result:
-        print(f"\nEmail sent to: {args.email}\n")
+    if '@' in args.target:
+        result = workflow.send_email(args.target, attack_id=args.attack_id)
+        print(f"\n{'✓' if result else '✗'} Email {'sent to' if result else 'failed for'}: {args.target}\n")
     else:
-        print(f"\nFailed to send email to: {args.email}\n")
+        db = DatabaseAdapter()
+        domain_employees = [e for e in get_domain_employees(db, args.target) if e.attack_simulations]
+        
+        if not domain_employees:
+            print(f"\nNo employees with attacks found for {args.target}\n")
+            return
+        
+        print(f"\nSending to {len(domain_employees)} employees at {args.target}...\n")
+        results = [(workflow.send_email(emp.email), emp.email) for emp in domain_employees]
+        sent = sum(1 for r, _ in results if r)
+        
+        for result, email in results:
+            print(f"{'✓' if result else '✗'} {email}")
+        
+        print(f"\nCompleted: {sent}/{len(results)} sent\n")
 
 
 def cmd_list_employees(args):
@@ -124,157 +125,127 @@ def cmd_list_employees(args):
     employees = db.session.query(Employee).all()
     
     if args.domain:
-        employees = [e for e in employees if args.domain in e.email]
+        employees = get_domain_employees(db, args.domain)
     
     if not employees:
-        print("\n📭 No employees found\n")
+        print("\nNo employees found\n")
         return
     
-    data = []
-    for emp in employees:
-        attack_count = len(emp.attack_simulations)
-        data.append([
-            emp.email,
-            f"{emp.first_name} {emp.last_name}",
-            emp.title,
-            f"{emp.vulnerability_score}/100" if emp.vulnerability_score else "N/A",
-            emp.risk_level or "N/A",
-            attack_count
-        ])
+    data = [[emp.email, f"{emp.first_name} {emp.last_name}", emp.title,
+             f"{emp.vulnerability_score}/100" if emp.vulnerability_score else "N/A",
+             emp.risk_level or "N/A", len(emp.attack_simulations)] for emp in employees]
     
     print(f"\nFound {len(employees)} employees:\n")
-    print(tabulate(data, headers=["Email", "Name", "Title", "Vuln Score", "Risk", "Attacks"], tablefmt="grid"))
+    print(tabulate(data, headers=["Email", "Name", "Title", "Vuln", "Risk", "Attacks"], tablefmt="grid"))
     print()
 
 
 def cmd_list_attacks(args):
-    """List all attack simulations."""
+    """List attack simulations."""
     db = DatabaseAdapter()
     attacks = db.session.query(AttackSimulation).all()
     
     if args.email:
         emp = db.get_employee_by_email(args.email)
-        if emp:
-            attacks = emp.attack_simulations
+        attacks = emp.attack_simulations if emp else []
     
     if not attacks:
-        print("\n📭 No attacks found\n")
+        print("\nNo attacks found\n")
         return
     
-    data = []
-    for attack in attacks:
-        data.append([
-            attack.id,
-            attack.employee.email,
-            attack.subject_line[:50] + "..." if len(attack.subject_line) > 50 else attack.subject_line,
-            attack.sender_persona,
-            "✅" if attack.was_executed else "❌",
-            attack.simulation_date.strftime("%Y-%m-%d %H:%M")
-        ])
+    data = [[attack.id, attack.employee.email,
+             attack.subject_line[:50] + "..." if len(attack.subject_line) > 50 else attack.subject_line,
+             attack.sender_persona, "✅" if attack.was_executed else "❌",
+             attack.simulation_date.strftime("%Y-%m-%d %H:%M")] for attack in attacks]
     
-    print(f"\n🎣 Found {len(attacks)} attack simulations:\n")
+    print(f"\nFound {len(attacks)} attacks:\n")
     print(tabulate(data, headers=["ID", "Target", "Subject", "Sender", "Sent", "Date"], tablefmt="grid"))
     print()
 
 
 def cmd_list_orgs(args):
-    """List all cached organizations."""
+    """List cached organizations."""
     db = DatabaseAdapter()
     orgs = db.session.query(Organization).all()
     
     if not orgs:
-        print("\n📭 No organizations found\n")
+        print("\nNo organizations found\n")
         return
     
-    data = []
-    for org in orgs:
-        data.append([
-            org.domain,
-            org.name,
-            org.industry,
-            org.employee_count,
-            f"{org.city}, {org.country}"
-        ])
+    data = [[org.domain, org.name, org.industry, org.employee_count,
+             f"{org.city}, {org.country}"] for org in orgs]
     
-    print(f"\n🏢 Found {len(orgs)} organizations:\n")
+    print(f"\nFound {len(orgs)} organizations:\n")
     print(tabulate(data, headers=["Domain", "Name", "Industry", "Employees", "Location"], tablefmt="grid"))
     print()
 
 
 def cmd_run_workflow(args):
-    """Run complete workflow."""
+    """Run complete workflow with SMTP sending enabled."""
     workflow = PhishingWorkflow()
-    workflow.run(args.domain, max_employees=args.limit, send_emails=args.send)
+    workflow.run(args.domain, max_employees=args.limit, send_emails=not args.no_send)
     print(f"\nWorkflow completed for {args.domain}\n")
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Phishing AI Agent - AI-powered phishing campaign simulator",
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
+    parser = argparse.ArgumentParser(description="Phishing AI Agent - AI-powered phishing simulator")
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
     
     # Enrich organization
-    parser_enrich_org = subparsers.add_parser('enrich-org', help='Enrich organization data')
-    parser_enrich_org.add_argument('domain', help='Organization domain (e.g., tikaj.com)')
-    parser_enrich_org.add_argument('--refresh', action='store_true', help='Force refresh cached data')
-    parser_enrich_org.set_defaults(func=cmd_enrich_org)
+    p = subparsers.add_parser('enrich-org', help='Enrich organization data')
+    p.add_argument('domain', help='Organization domain')
+    p.add_argument('--refresh', action='store_true', help='Force refresh')
+    p.set_defaults(func=cmd_enrich_org)
     
     # Gather employees
-    parser_gather = subparsers.add_parser('gather', help='Gather employees from data source')
-    parser_gather.add_argument('domain', help='Organization domain')
-    parser_gather.add_argument('--limit', type=int, default=10, help='Max employees to gather (default: 10)')
-    parser_gather.set_defaults(func=cmd_gather_employees)
+    p = subparsers.add_parser('gather', help='Gather employees')
+    p.add_argument('domain', help='Organization domain')
+    p.add_argument('--limit', type=int, default=10, help='Max employees (default: 10)')
+    p.set_defaults(func=cmd_gather_employees)
     
     # Enrich employees
-    parser_enrich = subparsers.add_parser('enrich', help='Enrich employees with vulnerability assessment')
-    parser_enrich.add_argument('domain', help='Organization domain')
-    parser_enrich.add_argument('--email', help='Specific employee email (optional)')
-    parser_enrich.set_defaults(func=cmd_enrich_employees)
+    p = subparsers.add_parser('enrich', help='Enrich employee vulnerability')
+    p.add_argument('domain', help='Organization domain')
+    p.add_argument('--email', help='Specific employee email')
+    p.set_defaults(func=cmd_enrich_employees)
     
     # Generate content
-    parser_generate = subparsers.add_parser('generate', help='Generate phishing content')
-    parser_generate.add_argument('domain', help='Organization domain')
-    parser_generate.add_argument('--email', help='Specific employee email (optional)')
-    parser_generate.set_defaults(func=cmd_generate_content)
+    p = subparsers.add_parser('generate', help='Generate phishing content')
+    p.add_argument('domain', help='Organization domain')
+    p.add_argument('--email', help='Specific employee email')
+    p.set_defaults(func=cmd_generate_content)
     
     # Send email
-    parser_send = subparsers.add_parser('send', help='Send phishing email simulation')
-    parser_send.add_argument('email', help='Employee email')
-    parser_send.add_argument('--attack-id', type=int, help='Specific attack ID (optional)')
-    parser_send.set_defaults(func=cmd_send_email)
+    p = subparsers.add_parser('send', help='Send via SMTP')
+    p.add_argument('target', help='Email or domain')
+    p.add_argument('--attack-id', type=int, help='Specific attack ID')
+    p.set_defaults(func=cmd_send_email)
     
-    # List employees
-    parser_list_emp = subparsers.add_parser('list-employees', help='List all employees')
-    parser_list_emp.add_argument('--domain', help='Filter by domain (optional)')
-    parser_list_emp.set_defaults(func=cmd_list_employees)
+    # List commands
+    p = subparsers.add_parser('list-employees', help='List employees')
+    p.add_argument('--domain', help='Filter by domain')
+    p.set_defaults(func=cmd_list_employees)
     
-    # List attacks
-    parser_list_attacks = subparsers.add_parser('list-attacks', help='List attack simulations')
-    parser_list_attacks.add_argument('--email', help='Filter by employee email (optional)')
-    parser_list_attacks.set_defaults(func=cmd_list_attacks)
+    p = subparsers.add_parser('list-attacks', help='List attacks')
+    p.add_argument('--email', help='Filter by email')
+    p.set_defaults(func=cmd_list_attacks)
     
-    # List organizations
-    parser_list_orgs = subparsers.add_parser('list-orgs', help='List cached organizations')
-    parser_list_orgs.set_defaults(func=cmd_list_orgs)
+    p = subparsers.add_parser('list-orgs', help='List organizations')
+    p.set_defaults(func=cmd_list_orgs)
     
-    # Run complete workflow
-    parser_run = subparsers.add_parser('run', help='Run complete workflow')
-    parser_run.add_argument('domain', help='Organization domain')
-    parser_run.add_argument('--limit', type=int, default=10, help='Max employees (default: 10)')
-    parser_run.add_argument('--send', action='store_true', help='Actually send emails')
-    parser_run.set_defaults(func=cmd_run_workflow)
+    # Run workflow
+    p = subparsers.add_parser('run', help='Run complete workflow with SMTP')
+    p.add_argument('domain', help='Organization domain')
+    p.add_argument('--limit', type=int, default=10, help='Max employees (default: 10)')
+    p.add_argument('--no-send', action='store_true', help='Skip SMTP sending')
+    p.set_defaults(func=cmd_run_workflow)
     
-    # Parse arguments
     args = parser.parse_args()
     
     if not args.command:
         parser.print_help()
         sys.exit(1)
     
-    # Execute command
     try:
         args.func(args)
     except Exception as e:
