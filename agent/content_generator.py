@@ -4,39 +4,28 @@ import json
 from typing import Dict, Any, Optional
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
+from config import DEFAULT_MODEL
 
 
 class ContentGenerator:
     """AI agent for generating dynamic, varied phishing email content."""
     
     def __init__(self):
-        api_key = os.getenv("HUNTO_MODEL_API_KEY")
-        os.environ['OPENAI_API_KEY'] = api_key
+        model_name = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
         
         self.agent = Agent(
-            model=OpenAIChatModel("gpt-4o-mini"),
+            model=OpenAIChatModel(model_name),
             system_prompt="""You are an expert phishing email writer specializing in social engineering campaigns.
 
 Your task: Generate realistic, highly targeted phishing emails that would pass human scrutiny.
 
-VARIETY IS CRITICAL: Each email should be unique in:
+VARIETY IS CRITICAL per EMPLOYEE: Each email should be unique in:
 - Writing style (formal, casual, urgent, friendly)
 - Structure and length
 - Call-to-action approach
 - Technical sophistication level
 - Emotional appeal angle
-
-Modern Phishing Techniques (2024-2025):
-- QR code emails ("scan to verify" pretexts)
-- AI chatbot impersonation (ChatGPT, Claude, company bots)
-- Collaboration tool spoofing (Teams, Slack, Zoom invites)
-- Supply chain attacks (vendor compromises, partner requests)
-- MFA fatigue (repeated authentication requests)
-- Cryptocurrency/Web3 pretexts (wallet verification, NFT claims)
-- Remote work infrastructure (VPN updates, security patches)
-- Voice/video deepfake threats (executive impersonation with AI)
-- Mobile-first attacks (SMS links, app notifications)
-- Calendar invite exploitation (fake meetings with malicious links)
+Take inspiration from different marketing email styles.
 
 Return JSON:
 {
@@ -52,7 +41,6 @@ Return JSON:
     
     def generate(self, employee: Dict[str, Any], enrichment: Dict[str, Any],
                  organization: Optional[Dict[str, Any]] = None, current_date: Optional[str] = None) -> Dict[str, Any]:
-        """Generate highly dynamic phishing email - let AI determine all context."""
         
         prompt = f"""Generate a unique, targeted phishing email for this profile:
 
@@ -89,7 +77,7 @@ Consider: Current events, seasonal trends, industry news, upcoming holidays/dead
    - Colleagues/peers for lateral movement
    - Personal contacts for pretexting (if data available)
 
-3. ATTACK VECTOR (Use Latest Techniques):
+3. ATTACK VECTOR (Use Latest Techniques below is sample list for inspiration):
    Select from modern 2024-2025 vectors:
    - QR code phishing (quishing) - "Scan to access secure document"
    - Teams/Slack link injection - Fake meeting invites, urgent messages

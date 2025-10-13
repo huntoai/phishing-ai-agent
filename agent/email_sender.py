@@ -91,7 +91,7 @@ class EmailSender:
             # Disconnect
             server.quit()
             
-            self.logger.info(f"✅ Email successfully sent to {to}")
+            self.logger.info(f"Email successfully sent to {to}")
             self.logger.info(f"From: {sender_persona} <{sender_email}>")
             self.logger.info(f"Subject: {subject}")
             
@@ -160,10 +160,10 @@ class EmailSender:
             server.login(self.smtp_username, self.smtp_password)
             server.quit()
             
-            self.logger.info("✅ SMTP connection successful")
+            self.logger.info("SMTP connection successful")
             return True
             
         except Exception as e:
-            self.logger.error(f"❌ SMTP connection failed: {str(e)}")
+            self.logger.error(f"SMTP connection failed: {str(e)}")
             return False
 

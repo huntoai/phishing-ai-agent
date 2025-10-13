@@ -16,13 +16,13 @@ def cmd_enrich_org(args):
     org = workflow.enrich_organization(args.domain, force_refresh=args.refresh)
     
     if org:
-        print(f"\n✅ Organization Enriched: {org.name}")
+        print(f"\nOrganization Enriched: {org.name}")
         print(f"   Domain: {org.domain}")
         print(f"   Industry: {org.industry}")
         print(f"   Employees: {org.employee_count}")
         print(f"   Location: {org.city}, {org.state}, {org.country}\n")
     else:
-        print(f"❌ Failed to enrich organization: {args.domain}")
+        print(f"Failed to enrich organization: {args.domain}")
 
 
 def cmd_gather_employees(args):
@@ -31,13 +31,13 @@ def cmd_gather_employees(args):
     employees = workflow.gather_employees(args.domain, max_employees=args.limit)
     
     if employees:
-        print(f"\n✅ Gathered {len(employees)} employees\n")
+        print(f"\nGathered {len(employees)} employees\n")
         data = []
         for emp in employees:
             data.append([emp.email, f"{emp.first_name} {emp.last_name}", emp.title, emp.city])
         print(tabulate(data, headers=["Email", "Name", "Title", "Location"], tablefmt="grid"))
     else:
-        print(f"❌ No employees found for {args.domain}")
+        print(f"No employees found for {args.domain}")
 
 
 def cmd_enrich_employees(args):
@@ -52,7 +52,7 @@ def cmd_enrich_employees(args):
         # Enrich single employee
         emp = db.get_employee_by_email(args.email)
         if not emp:
-            print(f"\n❌ Employee not found: {args.email}")
+            print(f"\nEmployee not found: {args.email}")
             print("Run 'gather' command first to collect employees.\n")
             return
         
@@ -61,7 +61,7 @@ def cmd_enrich_employees(args):
         # Refresh the employee object to get the updated data
         db.session.refresh(emp)
         
-        print(f"\n✅ Enriched: {emp.email}")
+        print(f"\nEnriched: {emp.email}")
         print(f"   Vulnerability: {emp.vulnerability_score}/100")
         print(f"   Risk Level: {emp.risk_level.upper()}")
         
@@ -74,10 +74,10 @@ def cmd_enrich_employees(args):
         employees = db.session.query(Employee).all()
         domain_employees = [e for e in employees if args.domain in e.email]
         
-        print(f"\n🔄 Enriching {len(domain_employees)} employees...\n")
+        print(f"\nEnriching {len(domain_employees)} employees...\n")
         for emp in domain_employees:
             enrichment = workflow.enrich_employee(emp, org)
-            print(f"✅ {emp.email} - {emp.vulnerability_score}/100 ({emp.risk_level})")
+            print(f"{emp.email} - {emp.vulnerability_score}/100 ({emp.risk_level})")
 
 
 def cmd_generate_content(args):
@@ -91,19 +91,19 @@ def cmd_generate_content(args):
     if args.email:
         # Generate for single employee
         content = workflow.generate_content(args.email, org)
-        print(f"\n✅ Generated content for: {args.email}")
-        print(f"\n📧 Subject: {content.get('subject')}")
-        print(f"📤 From: {content.get('sender')}")
-        print(f"\n📝 Body:\n{content.get('body')[:300]}...\n")
+        print(f"\nGenerated content for: {args.email}")
+        print(f"\nSubject: {content.get('subject')}")
+        print(f"From: {content.get('sender')}")
+        print(f"\nBody:\n{content.get('body')[:300]}...\n")
     else:
         # Generate for all employees
         employees = db.session.query(Employee).all()
         domain_employees = [e for e in employees if args.domain in e.email]
         
-        print(f"\n🔄 Generating content for {len(domain_employees)} employees...\n")
+        print(f"\nGenerating content for {len(domain_employees)} employees...\n")
         for emp in domain_employees:
             content = workflow.generate_content(emp.email, org)
-            print(f"✅ {emp.email} - {content.get('subject')}")
+            print(f"{emp.email} - {content.get('subject')}")
 
 
 def cmd_send_email(args):
@@ -113,9 +113,9 @@ def cmd_send_email(args):
     result = workflow.send_email(args.email, attack_id=args.attack_id)
     
     if result:
-        print(f"\n✅ Email sent to: {args.email}\n")
+        print(f"\nEmail sent to: {args.email}\n")
     else:
-        print(f"\n❌ Failed to send email to: {args.email}\n")
+        print(f"\nFailed to send email to: {args.email}\n")
 
 
 def cmd_list_employees(args):
@@ -142,7 +142,7 @@ def cmd_list_employees(args):
             attack_count
         ])
     
-    print(f"\n📋 Found {len(employees)} employees:\n")
+    print(f"\nFound {len(employees)} employees:\n")
     print(tabulate(data, headers=["Email", "Name", "Title", "Vuln Score", "Risk", "Attacks"], tablefmt="grid"))
     print()
 
@@ -205,7 +205,7 @@ def cmd_run_workflow(args):
     """Run complete workflow."""
     workflow = PhishingWorkflow()
     workflow.run(args.domain, max_employees=args.limit, send_emails=args.send)
-    print(f"\n✅ Workflow completed for {args.domain}\n")
+    print(f"\nWorkflow completed for {args.domain}\n")
 
 
 def main():
@@ -278,7 +278,7 @@ def main():
     try:
         args.func(args)
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}\n")
+        print(f"\nError: {str(e)}\n")
         sys.exit(1)
 
 

@@ -1,268 +1,155 @@
-## Phishing AI Agent
+# Phishing AI Agent
 
-This project is a geographically-aware AI agent designed to identify vulnerable employees within an organization who may be susceptible to phishing attacks. The agent uses public data sources (Apollo.io), geographical context research, and AI analysis to create highly targeted and realistic phishing simulations that incorporate local festivals, products, cultural events, and regional characteristics.
+[![License](https://img.shields.io/badge/License-Non--Commercial-red.svg)](./LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-green.svg)](https://openai.com/)
+This project is an AI agent designed to identify vulnerable employees within an organization who may be susceptible to phishing attacks.
+The agent uses public data sources to gather information about employees and assess their vulnerability to phishing attempts.
 
-## Why?
+## Overview
 
-1. **As a Security Team Leader**, you can leverage this AI agent to enhance your organization's overall security posture by proactively identifying and addressing potential weaknesses in employee behavior and awareness using realistic, geographically-relevant attack scenarios.
-2. **As Red Teamer**, you have limited time to conduct thorough reconnaissance on all employees within a target organization. This AI agent automates the process of identifying employees who may be more susceptible to phishing attacks and generates highly targeted campaigns using local context, allowing you to focus your efforts on high-risk targets with maximum realism.
-3. **As a Blue Teamer**, you can use this AI agent to identify potential vulnerabilities within your organization and develop targeted training programs that address location-specific attack vectors and cultural nuances.
+This tool automates the reconnaissance and campaign generation process by:
+- Discovering employees within target organizations
+- Enriching profiles with multi-source intelligence
+- Generating unique, contextual phishing emails
+- Simulating or executing email delivery
 
-This project is only an attempt to highlight the growing effectiveness of AI for Attackers while providing a leverage for organizations to defend as well.
-> An organization can conduct 100's of unique, geographically-targeted attacks without the need for vast libraries of attack templates.
+**Key Differentiator**: Uses dynamic knowledge fetching (phishing trends, regional holidays, industry news) instead of hardcoded templates. Every attack is unique and culturally relevant.
 
-⚠️ **IMPORTANT**: This tool is intended for security testing and awareness training purposes only. It is not intended for malicious use, and users are encouraged to use it responsibly and ethically.
+## Why ?
+1. **As a Security Team Leader**, you can leverage this AI agent to enhance your organization's overall security posture by proactively identifying and addressing potential weaknesses in employee behavior and awareness.
+2. **As Red Teamer**, you have limited time to conduct thorough reconnaissance on all employees within a target organization. This AI agent automates the process of identifying employees who may be more susceptible to phishing attacks, allowing you to focus your efforts on high-risk targets and improve the effectiveness of your social engineering campaigns.
+3. **As a Blue Teamer**, you can use this AI agent to identify potential vulnerabilities within your organization and develop targeted training programs to improve employee awareness and resilience against phishing attacks.
 
-## Key Features
+This project is only an attempt to highlight the growing effectiveness of AI for Attackers while a leverage for organizations to defend as well.
+> An organization can conduct 100's of uniqiue attacks as 100 different attackers without need of vast library of attacks in simulation tool. 
 
-### 🧠 Dynamic Knowledge Fetching (NEW!)
-- **Real-Time Intelligence**: AI calls external tools to fetch latest phishing trends, not hardcoded data
-- **Regional Intelligence Tool**: Dynamically fetches holidays, local brands, cultural events for ANY location
-- **Industry Intelligence Tool**: Fetches current news, trends, tools, compliance requirements
-- **Intelligent Caching**: 24h cache for trends, 30d for regional data, 12h for industry news
-- **Transparent Tool Usage**: Logs show exactly what intelligence was fetched
-- See [DYNAMIC_KNOWLEDGE_SYSTEM.md](DYNAMIC_KNOWLEDGE_SYSTEM.md) for full details
+It is not intended for malicious use, and users are encouraged to use it responsibly and ethically.
 
-### Dynamic AI-Powered Analysis
-- **No Hardcoded Templates**: AI dynamically determines regional context, cultural events, and attack strategies
-- **Latest Phishing Trends**: Fetched from security research, not static lists
-- **Complete Data Context**: AI receives full employee and organization profiles for maximum personalization
-- **Varied Content Generation**: Each email is unique with different styles, tones, and approaches
+> This tool is intended for authorized security testing and awareness training only. See [LICENSE](./LICENSE) for terms.
 
-### Multi-Source Enrichment
-- **Apollo.io**: Employee discovery and organizational data
-- **Brave Search API**: Professional profile research and social media presence
-- **LinkedIn Scraping**: Authenticated profile data extraction (optional with credentials)
-- **Comprehensive Storage**: All enrichment data stored in database for analysis
+## Features
 
-### Intelligent Targeting
-- **Vulnerability Scoring**: AI-powered risk assessment (0-100 scale)
-- **Psychological Triggers**: Authority, urgency, fear, curiosity, greed, social proof
-- **Role-Based Attacks**: Tailored to job title, seniority, and department
-- **Temporal Context**: Current date awareness for seasonal/timely pretexts
+- **Dynamic Knowledge Fetching**: AI calls external tools to fetch real-time phishing trends, regional holidays, and industry intelligence
+- **Multi-Source Enrichment**: Apollo.io, Brave Search, LinkedIn profile data
+- **AI-Powered Analysis**: Vulnerability scoring, psychological profiling, attack vector recommendation
+- **SMTP Integration**: Simulation mode or real email delivery via SMTP
+- **Complete Tracking**: Database storage of all enrichment, campaigns, and results
 
-
-## 🔧 Setup & Configuration
-
-### Environment Variables
-
-```bash
-# Required - AI & Data Sources
-HUNTO_MODEL_API_KEY=sk-...  # OpenAI API key for GPT-4o-mini
-APOLLO_API_KEY=...           # Apollo.io API key
-
-# Optional Enrichment Sources
-BRAVE_API_KEY=...            # Brave Search API (HIGHLY recommended for dynamic intelligence)
-LINKEDIN_EMAIL=...           # LinkedIn credentials for authenticated scraping
-LINKEDIN_PASSWORD=...        # (optional - enables full profile data)
-
-# Email Sending Configuration
-EMAIL_MODE=simulation        # "simulation" (default) or "smtp" for actual sending
-
-# SMTP Settings (required if EMAIL_MODE=smtp)
-SMTP_HOST=smtp.mailtrap.io   # SMTP server (default: Mailtrap for testing)
-SMTP_PORT=2525               # SMTP port (default: 2525)
-SMTP_USERNAME=...            # SMTP username
-SMTP_PASSWORD=...            # SMTP password
-SMTP_USE_TLS=true            # Use TLS encryption (default: true)
-
-# Sender Configuration
-SENDER_DOMAIN=securemail.test  # Domain for spoofed sender addresses
-SENDER_NAME=IT Security        # Default sender name
-```
-
-### Testing with Mailtrap (Recommended)
-
-For safe testing without sending real emails, use [Mailtrap](https://mailtrap.io):
-
-1. Sign up for free account at https://mailtrap.io
-2. Get your SMTP credentials from the inbox settings
-3. Set environment variables:
-
-```bash
-EMAIL_MODE=smtp
-SMTP_HOST=smtp.mailtrap.io
-SMTP_PORT=2525
-SMTP_USERNAME=your-mailtrap-username
-SMTP_PASSWORD=your-mailtrap-password
-SENDER_DOMAIN=company.test
-```
-
-4. All emails will be caught in Mailtrap inbox (no actual delivery)
-
+## Quick Start
 
 ### Installation
 
 ```bash
-# Install dependencies
+git clone https://github.com/huntoai/phishing-ai-agent.git
+cd phishing-ai-agent
 pip install -r requirements.txt
 ```
 
+### Configuration
 
-
-## Usage & Examples
-
-### Quick Start - Complete Workflow
-
-Run the entire workflow (enrich organization, gather employees, enrich profiles, generate attacks):
+Create `.env` file:
 
 ```bash
-# Run complete workflow for domain
-python main.py run tikaj.com --limit 10
+# Required
+OPENAI_API_KEY=sk-...
+APOLLO_API_KEY=...
 
-# Run without employee limit
-python main.py run example.com
+# Model Selection
+OPENAI_MODEL=gpt-4o-mini
+
+# Optional (recommended for better intelligence)
+BRAVE_API_KEY=...
+LINKEDIN_EMAIL=...
+LINKEDIN_PASSWORD=...
+
+# Email Configuration
+EMAIL_MODE=simulation
+SENDER_DOMAIN=securemail.test
 ```
 
-### Individual Commands
+See [.env.example](.env.example) for complete configuration options.
 
-#### 1. Enrich Organization
-
-Get detailed information about the target organization:
+### Basic Usage
 
 ```bash
-python main.py enrich-org tikaj.com
+# Complete workflow - enrich organization and generate campaigns
+python main.py run <domain>
+
+# Individual commands
+python main.py enrich-org <domain>              # Enrich organization data
+python main.py gather <domain>                  # Discover employees
+python main.py enrich <domain> --email <email>  # Enrich specific employee
+python main.py generate <domain>                # Generate phishing content
+python main.py send <email>                     # Send simulation
+python main.py list-employees --domain <domain> # View results
 ```
 
-#### 2. Gather Employees
-
-Collect employee list from Apollo API:
+### Example Workflow
 
 ```bash
-# Gather up to 50 employees
-python main.py gather tikaj.com --limit 50
+# Target organization
+python main.py run tikaj.com --limit 5
 
-# Gather employees from specific departments
-python main.py gather tikaj.com --departments engineering,sales
-
-# Gather senior-level employees only
-python main.py gather example.com --seniorities senior,director,vp
+# Output:
+# - 5 employees enriched with vulnerability scores
+# - 5 unique phishing emails generated
+# - Attack simulations ready for delivery
 ```
 
-#### 3. Enrich Employee Profiles
 
-Analyze employee vulnerabilities using multiple enrichment sources (Apollo, Brave Search, LinkedIn):
+## Testing
 
-```bash
-# Enrich all employees for an organization
-python main.py enrich tikaj.com
+### With Mailtrap (Recommended)
 
-# Enrich specific employee
-python main.py enrich tikaj.com --emails john.doe@tikaj.com
+Safe testing without sending real emails:
 
-# Enrich multiple employees
-python main.py enrich example.com --emails alice@example.com,bob@example.com
-```
+1. Sign up at [mailtrap.io](https://mailtrap.io)
+2. Get SMTP credentials
+3. Configure `.env`:
+   ```bash
+   EMAIL_MODE=smtp
+   SMTP_HOST=smtp.mailtrap.io
+   SMTP_PORT=2525
+   SMTP_USERNAME=...
+   SMTP_PASSWORD=...
+   ```
+4. Run: `python test_smtp.py`
 
-#### 4. Generate Phishing Content
-
-Create targeted phishing emails using current date/trends context:
-
-```bash
-# Generate attacks for all enriched employees
-python main.py generate tikaj.com
-
-# Generate attack for specific employee
-python main.py generate tikaj.com --emails jane.smith@tikaj.com
-
-# Generate for multiple employees
-python main.py generate example.com --emails user1@example.com,user2@example.com
-```
-
-#### 5. Send Phishing Emails
-
-Send generated phishing emails (for authorized testing only):
+### End-to-End Test
 
 ```bash
-# Send to specific employee
-python main.py send john.doe@tikaj.com
+# Test complete workflow
+python main.py run example.com --limit 2
 
-# Send using specific attack simulation ID
-python main.py send john.doe@tikaj.com --attack-id 42
-```
-
-### Listing & Inspection Commands
-
-#### List Employees
-
-```bash
-# List all employees
-python main.py list-employees
-
-# List employees from specific organization
-python main.py list-employees --domain tikaj.com
-
-# List high-risk employees only
-python main.py list-employees --risk-level high
-
-# List employees from specific department
-python main.py list-employees --department engineering
-```
-
-#### List Attack Simulations
-
-```bash
-# List all attack simulations
+# Verify results
+python main.py list-employees --domain example.com
 python main.py list-attacks
-
-# List attacks for specific organization
-python main.py list-attacks --domain tikaj.com
-
-# List attacks for specific employee
-python main.py list-attacks --email john.doe@tikaj.com
-
-# List attacks by vector type
-python main.py list-attacks --vector executive_impersonation
 ```
 
-#### List Organizations
+## Performance
 
-```bash
-# List all organizations
-python main.py list-orgs
+- **Enrichment**: ~20-25 seconds per employee (with caching)
+- **Content Generation**: ~8-10 seconds per email
+- **API Costs**: ~$1/month for 1000 employees (OpenAI + Brave Search)
 
-# List organizations by industry
-python main.py list-orgs --industry technology
-```
+## Requirements
 
-### Advanced Examples
+- Python 3.10+
+- OpenAI API key (GPT-4o-mini recommended)
+- Apollo.io API key
+- Optional: Brave Search API, LinkedIn credentials
 
-#### Targeted Campaign - High Risk Executives
+## License
 
-```bash
-# Step 1: Gather senior employees
-python main.py gather example.com --seniorities senior,director,vp,c_suite --limit 20
+This project is licensed for **non-commercial use only**. See [LICENSE](./LICENSE) for details.
 
-# Step 2: Enrich profiles with multiple sources
-python main.py enrich example.com
+Unauthorized use for malicious purposes is strictly prohibited. Always obtain proper authorization before conducting phishing simulations.
 
-# Step 3: Generate timely attacks
-python main.py generate example.com
+## Disclaimer
 
-# Step 4: Review high-risk targets
-python main.py list-employees --domain example.com --risk-level high
+This tool is provided for security research and authorized testing only. The authors are not responsible for misuse or damage caused by this software. Users must comply with all applicable laws and regulations.
 
-# Step 5: Execute (authorized testing only)
-python main.py send target@example.com
-```
+## Support
 
-#### Department-Specific Campaign
-
-```bash
-# Target finance department during tax season
-python main.py gather company.com --departments finance,accounting --limit 30
-python main.py enrich company.com
-python main.py generate company.com
-python main.py list-attacks --domain company.com
-```
-
-#### Single Employee Deep Dive
-
-```bash
-# Complete analysis for one employee
-python main.py gather target-org.com --limit 1
-python main.py enrich target-org.com --emails employee@target-org.com
-python main.py generate target-org.com --emails employee@target-org.com
-python main.py list-attacks --email employee@target-org.com
-```
-
+For issues, questions, or feature requests, please open a GitHub issue.

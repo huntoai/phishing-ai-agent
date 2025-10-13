@@ -1,13 +1,20 @@
 """
 Knowledge base tools for fetching real-time intelligence data.
-These tools provide dynamic context for the enrichment agent.
 """
 import os
 import json
 import requests
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from core.logger import Logger
+from config import (
+    CACHE_DURATION_TRENDS,
+    CACHE_DURATION_REGIONAL,
+    CACHE_DURATION_INDUSTRY,
+    API_TIMEOUT_SEARCH,
+    SEARCH_MAX_RESULTS,
+    SEARCH_FRESHNESS
+)
 
 
 class PhishingTrendsFetcher:
@@ -17,7 +24,7 @@ class PhishingTrendsFetcher:
         self.logger = Logger.get_logger("PhishingTrendsFetcher")
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.cache = {}
-        self.cache_duration = timedelta(hours=24)
+        self.cache_duration = CACHE_DURATION_TRENDS
     
     def get_latest_trends(self, year: Optional[int] = None) -> List[Dict[str, Any]]:
         """
@@ -59,11 +66,11 @@ class PhishingTrendsFetcher:
             
             params = {
                 "q": query,
-                "count": 10,
-                "freshness": "pm"  # Past month
+                "count": SEARCH_MAX_RESULTS,
+                "freshness": SEARCH_FRESHNESS
             }
             
-            response = requests.get(url, headers=headers, params=params, timeout=10)
+            response = requests.get(url, headers=headers, params=params, timeout=API_TIMEOUT_SEARCH)
             response.raise_for_status()
             
             data = response.json()
@@ -137,7 +144,7 @@ class RegionalIntelligenceFetcher:
         self.logger = Logger.get_logger("RegionalIntelligenceFetcher")
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.cache = {}
-        self.cache_duration = timedelta(days=30)
+        self.cache_duration = CACHE_DURATION_REGIONAL
     
     def get_regional_context(self, city: Optional[str] = None, 
                             state: Optional[str] = None, 
@@ -261,7 +268,7 @@ class IndustryIntelligenceFetcher:
         self.logger = Logger.get_logger("IndustryIntelligenceFetcher")
         self.brave_api_key = os.getenv("BRAVE_API_KEY")
         self.cache = {}
-        self.cache_duration = timedelta(hours=12)
+        self.cache_duration = CACHE_DURATION_INDUSTRY
     
     def get_industry_context(self, industry: Optional[str]) -> Dict[str, Any]:
         """Get industry-specific intelligence."""

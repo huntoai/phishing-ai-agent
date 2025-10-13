@@ -5,32 +5,29 @@ from typing import Dict, Any, Optional, List
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from datetime import datetime
-
-# Import knowledge base tools
 import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from integrations.knowledge_tools import (
     PhishingTrendsFetcher,
     RegionalIntelligenceFetcher,
     IndustryIntelligenceFetcher
 )
+from config import DEFAULT_MODEL, MAX_RETRIES
 
 
 class EnrichmentAgent:
     """AI agent for enriching employee profiles with dynamic knowledge fetching."""
     
     def __init__(self):
-        api_key = os.getenv("HUNTO_MODEL_API_KEY")
-        os.environ['OPENAI_API_KEY'] = api_key
+        model_name = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
         
-        # Initialize knowledge fetchers
         self.trends_fetcher = PhishingTrendsFetcher()
         self.regional_fetcher = RegionalIntelligenceFetcher()
         self.industry_fetcher = IndustryIntelligenceFetcher()
         
-        # Create agent with tools
         self.agent = Agent(
-            model=OpenAIChatModel("gpt-4o-mini"),
+            model=OpenAIChatModel(model_name),
             system_prompt="""You are an expert social engineering analyst specializing in phishing attack planning.
 
 Your task: Analyze employee and organization data to assess phishing vulnerability and recommend attack strategies.
@@ -58,10 +55,9 @@ Return vulnerability assessment as JSON:
     "regional_insights": ["location-specific attack opportunities from real data"],
     "timing_recommendations": ["best times/events based on real holidays/events"]
 }""",
-            retries=2
+            retries=MAX_RETRIES
         )
         
-        # Register tools with the agent
         self._register_tools()
     
     def _register_tools(self):

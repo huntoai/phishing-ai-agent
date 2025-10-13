@@ -327,7 +327,7 @@ class PhishingWorkflow:
         # Steps 2-4: Process each employee
         for employee in employees:
             # Enrich
-            self.enrich_employee(employee.email, org)
+            self.enrich_employee(employee, org)
             
             # Generate content
             self.generate_content(employee.email, org)
