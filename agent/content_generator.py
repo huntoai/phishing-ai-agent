@@ -1,16 +1,17 @@
 """AI agent for generating phishing email content."""
 import os
 import json
-from typing import Dict, Any, Optional
-from pydantic_ai import Agent
+from typing import Dict, Any, Optional, List
+from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from config import DEFAULT_MODEL
+from agent.prompts import CONTENT_GENERATOR_SYSTEM_PROMPT, get_content_generation_prompt
 
 
 class ContentGenerator:
     """AI agent for generating dynamic, varied phishing email content."""
     
-    def __init__(self):
+    def __init__(self, db_adapter=None):
         # Always set OPENAI_API_KEY in os.environ for all libraries
         openai_key = os.getenv("OPENAI_API_KEY")
         if openai_key:
@@ -20,117 +21,81 @@ class ContentGenerator:
 
         self.agent = Agent(
             model=OpenAIChatModel(model_name),
-            system_prompt="""You are an expert phishing email writer specializing in social engineering campaigns.
-
-Your task: Generate realistic, highly targeted phishing emails that would pass human scrutiny.
-
-VARIETY IS CRITICAL per EMPLOYEE: Each email should be unique in:
-- Writing style (formal, casual, urgent, friendly)
-- Structure and length
-- Call-to-action approach
-- Technical sophistication level
-- Emotional appeal angle
-Take inspiration from different marketing email styles.
-
-Return JSON:
-{
-    "subject": "compelling subject line",
-    "body": "full email body with natural language",
-    "sender": "spoofed sender identity",
-    "attack_vector": "specific technique used",
-    "pretext": "storyline/scenario",
-    "cta": "call-to-action type",
-    "sophistication": "low/medium/high"
-}"""
+            system_prompt=CONTENT_GENERATOR_SYSTEM_PROMPT
         )
+        
+        # Store database adapter for tool access
+        self.db_adapter = db_adapter
+        
+        # Register tools
+        self._register_tools()
+    
+    def _register_tools(self):
+        """Register tools for the content generator agent."""
+        
+        @self.agent.tool
+        def get_employees_by_designation(ctx: RunContext[None], 
+                                         designation: str, 
+                                         domain: Optional[str] = None,
+                                         limit: int = 5) -> List[Dict[str, Any]]:
+            """
+            Fetch real employees from the organization by job title/designation.
+            Use this for INTERNAL SPEAR PHISHING to get real employee names and titles.
+            
+            Args:
+                designation: Job title to search (e.g., "Manager", "Engineer", "CEO")
+                domain: Optional domain filter (e.g., "tikaj.com")
+                limit: Maximum number of employees to return (default: 5)
+            
+            Returns:
+                List of real employees with name, title, email
+            """
+            if not self.db_adapter:
+                return []
+            
+            from core.models import Employee
+            
+            try:
+                # Query all employees
+                employees = self.db_adapter.session.query(Employee).all()
+                
+                # Filter by designation (case-insensitive)
+                designation_lower = designation.lower()
+                filtered = [e for e in employees if e.title and designation_lower in e.title.lower()]
+                
+                # Filter by domain if provided
+                if domain:
+                    filtered = [e for e in filtered if domain in e.email]
+                
+                # Limit results
+                filtered = filtered[:limit]
+                
+                # Return relevant data
+                return [
+                    {
+                        "name": f"{e.first_name} {e.last_name}",
+                        "first_name": e.first_name,
+                        "last_name": e.last_name,
+                        "title": e.title,
+                        "email": e.email
+                    }
+                    for e in filtered
+                ]
+            except Exception as e:
+                return []
     
     def generate(self, employee: Dict[str, Any], enrichment: Dict[str, Any],
-                 organization: Optional[Dict[str, Any]] = None, current_date: Optional[str] = None) -> Dict[str, Any]:
+                 organization: Optional[Dict[str, Any]] = None, current_date: Optional[str] = None,
+                 email_context: Optional[str] = None) -> Dict[str, Any]:
         
-        prompt = f"""Generate a unique, targeted phishing email for this profile:
-
-=== CURRENT DATE & CONTEXT ===
-{current_date or 'Unknown'}
-Consider: Current events, seasonal trends, industry news, upcoming holidays/deadlines
-
-=== TARGET EMPLOYEE (Complete Profile) ===
-{json.dumps(employee, indent=2)}
-
-=== ORGANIZATION (Complete Profile) ===
-{json.dumps(organization or {}, indent=2)}
-
-=== VULNERABILITY ASSESSMENT ===
-{json.dumps(enrichment, indent=2)}
-
-=== GENERATION REQUIREMENTS ===
-
-1. VARIETY & UNIQUENESS:
-   - Vary your approach significantly from standard templates
-   - Use different emotional angles (urgency vs curiosity vs authority vs reward)
-   - Mix formal and casual tones based on target
-   - Vary email length (short and punchy vs detailed and convincing)
-   - Alternate between technical and non-technical pretexts
-
-2. SENDER PERSONA (Dynamic Selection):
-   Choose appropriate sender based on target role and enrichment:
-   - C-level executives (CEO, CFO, CTO) for authority attacks
-   - IT/Security team for technical pretexts
-   - HR/People Ops for policy/benefits
-   - Finance/Accounting for payments/expenses
-   - External vendors/partners for supply chain
-   - Industry-specific authorities (auditors, regulators, associations)
-   - Colleagues/peers for lateral movement
-   - Personal contacts for pretexting (if data available)
-
-3. ATTACK VECTOR (Use Latest Techniques below is sample list for inspiration):
-   Select from modern 2024-2025 vectors:
-   - QR code phishing (quishing) - "Scan to access secure document"
-   - Teams/Slack link injection - Fake meeting invites, urgent messages
-   - AI tool impersonation - "Your ChatGPT account needs verification"
-   - Supply chain compromise - Vendor portal updates, partner requests
-   - MFA fatigue - "Approve this login attempt"
-   - Crypto/Web3 - Wallet security, NFT claims, token airdrops
-   - Calendar exploits - Malicious meeting invites with credential harvesting
-   - Voice phishing setup - "Verify your number for security callback"
-   - Mobile app spoofing - Corporate app updates, security patches
-   - Cloud storage sharing - "Document shared with you" with malicious link
-
-4. PRETEXT DEVELOPMENT (Contextual & Timely):
-   Research and incorporate:
-   - Employee's location-specific events, services, brands
-   - Industry-specific terminology, processes, concerns
-   - Role-specific workflows, tools, responsibilities
-   - Organizational culture and communication style
-   - Current date relevance (tax season, fiscal year, holidays, quarterly reviews)
-   - Trending topics in their industry/location
-
-5. PSYCHOLOGICAL ENGINEERING:
-   Use enrichment data to apply appropriate triggers:
-   - Authority: Executive pressure, compliance mandates
-   - Urgency: Deadlines, account suspension, security breaches
-   - Fear: Job security, policy violations, legal issues
-   - Curiosity: Career opportunities, exclusive information, industry news
-   - Greed: Bonuses, reimbursements, exclusive offers, promotions
-   - Social proof: Team-wide initiatives, peer participation
-   - Reciprocity: Gifts, surveys with rewards, help requests
-
-6. WRITING STYLE VARIATION:
-   Alternate between these styles:
-   - Professional/Corporate: Formal language, proper formatting, company jargon
-   - Urgent/Alarming: Short sentences, ALL CAPS warnings, time pressure
-   - Casual/Friendly: Conversational tone, first names, emojis (when appropriate)
-   - Technical/Detailed: Technical terminology, step-by-step instructions
-   - Brief/Direct: One-line asks, minimal explanation
-   - Storytelling: Longer narrative building trust and context
-
-7. QUALITY INDICATORS:
-   - Natural language (avoid robotic/templated feel)
-   - Appropriate grammar for sender persona (executive = polished, vendor = variable)
-   - Realistic timing and context
-   - Plausible call-to-action
-   - No obvious red flags unless intentionally mimicking lower sophistication
-
-Generate ONE highly targeted, unique email that would be effective against this specific target."""
+        current_date = current_date or 'Unknown'
+        prompt = get_content_generation_prompt(
+            json.dumps(employee, indent=2),
+            json.dumps(enrichment, indent=2),
+            json.dumps(organization or {}, indent=2),
+            current_date,
+            email_context
+        )
         
         result = self.agent.run_sync(prompt)
         

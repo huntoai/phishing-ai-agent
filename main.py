@@ -80,9 +80,10 @@ def cmd_generate_content(args):
     workflow = PhishingWorkflow()
     db = DatabaseAdapter()
     org = db.get_organization_by_domain(args.domain)
+    email_context = getattr(args, 'email_context', None)
     
     if args.email:
-        content = workflow.generate_content(args.email, org)
+        content = workflow.generate_content(args.email, org, email_context=email_context)
         print(f"\nGenerated for: {args.email}")
         print(f"Subject: {content.get('subject')}")
         print(f"From: {content.get('sender')}\n")
@@ -90,7 +91,7 @@ def cmd_generate_content(args):
         domain_employees = get_domain_employees(db, args.domain)
         print(f"\nGenerating content for {len(domain_employees)} employees...\n")
         for emp in domain_employees:
-            content = workflow.generate_content(emp.email, org)
+            content = workflow.generate_content(emp.email, org, email_context=email_context)
             print(f"{emp.email} - {content.get('subject')}")
 
 
@@ -140,6 +141,31 @@ def cmd_list_employees(args):
     print()
 
 
+def cmd_list_by_designation(args):
+    """List employees filtered by job title/designation."""
+    db = DatabaseAdapter()
+    employees = db.session.query(Employee).all()
+    
+    # Filter by designation (case-insensitive partial match)
+    designation = args.designation.lower()
+    filtered = [e for e in employees if e.title and designation in e.title.lower()]
+    
+    if args.domain:
+        filtered = [e for e in filtered if args.domain in e.email]
+    
+    if not filtered:
+        print(f"\nNo employees found with designation matching '{args.designation}'\n")
+        return
+    
+    data = [[emp.email, f"{emp.first_name} {emp.last_name}", emp.title,
+             f"{emp.vulnerability_score}/100" if emp.vulnerability_score else "N/A",
+             emp.risk_level or "N/A"] for emp in filtered]
+    
+    print(f"\nFound {len(filtered)} employees with designation '{args.designation}':\n")
+    print(tabulate(data, headers=["Email", "Name", "Title", "Vuln", "Risk"], tablefmt="grid"))
+    print()
+
+
 def cmd_list_attacks(args):
     """List attack simulations."""
     db = DatabaseAdapter()
@@ -183,7 +209,8 @@ def cmd_list_orgs(args):
 def cmd_run_workflow(args):
     """Run complete workflow with SMTP sending enabled."""
     workflow = PhishingWorkflow()
-    workflow.run(args.domain, max_employees=args.limit, send_emails=not args.no_send)
+    email_context = getattr(args, 'email_context', None)
+    workflow.run(args.domain, max_employees=args.limit, send_emails=not args.no_send, email_context=email_context)
     print(f"\nWorkflow completed for {args.domain}\n")
 
 
@@ -213,6 +240,7 @@ def main():
     p = subparsers.add_parser('generate', help='Generate phishing content')
     p.add_argument('domain', help='Organization domain')
     p.add_argument('--email', help='Specific employee email')
+    p.add_argument('--email-context', help='Additional context for email generation')
     p.set_defaults(func=cmd_generate_content)
     
     # Send email
@@ -226,6 +254,11 @@ def main():
     p.add_argument('--domain', help='Filter by domain')
     p.set_defaults(func=cmd_list_employees)
     
+    p = subparsers.add_parser('list-by-designation', help='List employees by job title')
+    p.add_argument('designation', help='Job title/designation to filter (partial match)')
+    p.add_argument('--domain', help='Filter by domain')
+    p.set_defaults(func=cmd_list_by_designation)
+    
     p = subparsers.add_parser('list-attacks', help='List attacks')
     p.add_argument('--email', help='Filter by email')
     p.set_defaults(func=cmd_list_attacks)
@@ -238,6 +271,7 @@ def main():
     p.add_argument('domain', help='Organization domain')
     p.add_argument('--limit', type=int, default=10, help='Max employees (default: 10)')
     p.add_argument('--no-send', action='store_true', help='Skip SMTP sending')
+    p.add_argument('--email-context', help='Additional context for email generation')
     p.set_defaults(func=cmd_run_workflow)
     
     args = parser.parse_args()

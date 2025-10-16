@@ -23,7 +23,7 @@ class PhishingWorkflow:
         self.db = DatabaseAdapter()
         self.data_source = data_source or ApolloAPI()
         self.enricher = EnrichmentAgent()
-        self.generator = ContentGenerator()
+        self.generator = ContentGenerator(db_adapter=self.db)
         self.sender = EmailSender()
         
         # Initialize enrichment sources
@@ -195,7 +195,7 @@ class PhishingWorkflow:
         
         return local_employee
     
-    def generate_content(self, email: str, organization: Optional[Organization] = None) -> Dict[str, Any]:
+    def generate_content(self, email: str, organization: Optional[Organization] = None, email_context: Optional[str] = None) -> Dict[str, Any]:
         """Generate phishing content - pass complete data to AI for dynamic content generation."""
         self.logger.info(f"[GENERATE] Creating attack for {email}")
         
@@ -246,7 +246,7 @@ class PhishingWorkflow:
         
         # Generate content with current date - AI has full context
 
-        content = self.generator.generate(employee_dict, enrichment_dict, org_dict, current_date)
+        content = self.generator.generate(employee_dict, enrichment_dict, org_dict, current_date, email_context)
         
         # Build generation context
         generation_context = {
@@ -312,7 +312,7 @@ class PhishingWorkflow:
         
         return result
     
-    def run(self, domain: str, max_employees: int = 10, send_emails: bool = False):
+    def run(self, domain: str, max_employees: int = 10, send_emails: bool = False, email_context: Optional[str] = None):
         """Execute complete workflow: Org Enrich -> Gather -> Enrich -> Generate -> Send"""
         
         # Step 0: Enrich organization
@@ -330,7 +330,7 @@ class PhishingWorkflow:
             self.enrich_employee(employee, org)
             
             # Generate content
-            self.generate_content(employee.email, org)
+            self.generate_content(employee.email, org, email_context=email_context)
             
             # Send (if enabled)
             if send_emails:
