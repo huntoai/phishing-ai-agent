@@ -1,0 +1,269 @@
+.encyclopediaPage {
+  padding: 6rem 2rem 4rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #f8fafc;
+}
+
+.gradientText {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #cbd5e1;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.searchSection {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.categoriesSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 3rem;
+}
+
+.categoryChip {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.categoryChip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.categoryChip.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+.scamsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+}
+
+.scamCard {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cardIcon {
+  font-size: 3rem;
+}
+
+.cardTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 0.5rem;
+}
+
+.cardCategory {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  margin-bottom: 0.75rem;
+}
+
+.cardTldr {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  flex: 1;
+}
+
+.noResults {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.noResultsIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.noResults h3 {
+  font-size: 1.5rem;
+  color: #f8fafc;
+  margin-bottom: 0.5rem;
+}
+
+.noResults p {
+  color: #94a3b8;
+}
+
+.backButton {
+  margin-bottom: 2rem;
+}
+
+.scamDetail {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.scamHeader {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.scamIcon {
+  font-size: 5rem;
+}
+
+.scamTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-bottom: 1rem;
+}
+
+.scamMeta {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 1rem;
+}
+
+.tldrCard {
+  border-left: 4px solid #818cf8;
+}
+
+.tldr,
+.description,
+.impact {
+  color: #cbd5e1;
+  line-height: 1.8;
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.orderedList,
+.examplesList,
+.actionsList {
+  color: #cbd5e1;
+  line-height: 1.8;
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.orderedList li,
+.examplesList li,
+.actionsList li {
+  margin-bottom: 0.75rem;
+}
+
+.redFlagsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.redFlag {
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.5rem;
+  color: #fca5a5;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.flagIcon {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .scamsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .scamHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .encyclopediaPage {
+    padding: 5rem 1rem 3rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1.125rem;
+  }
+
+  .categoriesSection {
+    justify-content: flex-start;
+  }
+
+  .scamsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .scamTitle {
+    font-size: 2rem;
+  }
+
+  .redFlagsGrid {
+    grid-template-columns: 1fr;
+  }
+}

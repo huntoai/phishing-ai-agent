@@ -76,3 +76,12 @@ venv/
 .delete/
 
 *.db
+
+# Website / Gatsby
+website/node_modules/
+website/.cache/
+website/public/
+website/.DS_Store
+website/npm-debug.log*
+website/yarn-debug.log*
+website/yarn-error.log*
